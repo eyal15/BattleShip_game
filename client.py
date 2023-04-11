@@ -1,13 +1,18 @@
-# let user deploy his ships
-# create server and clients
 # transfer info between clients
+# start the game
+# check if anyone won
+# show on boards the players moves
+# if anyone won finish the game
+# add clock
+# add rotate button
 
 import pygame
 import numpy as np
 from ship import Ship
+from network import Network
 
 pygame.init()
-text_font = pygame.font.SysFont('monospace', 30)
+text_font = pygame.font.SysFont('monospace', 20)
 
 
 def grid(win, cells, size, pos, ships_on_board):
@@ -15,22 +20,31 @@ def grid(win, cells, size, pos, ships_on_board):
     [ship.draw(win) for ship in ships_on_board]
 
     global text_font
-    # letter = 'A'
-    # for i in range(15):
-    #     text = text_font.render(letter, True, 'white')
-    #     win.blit(text, (i+13, i+3))
-    #     letter = chr(ord(letter) + 1)
+    letter = 'A'
+    for i in range(14):
+        text = text_font.render(letter, True, 'white')
+        win.blit(text, ((i*20)+265, 30))
+        win.blit(text, (230, (i*20)+60))
+
+        win.blit(text, ((i*20)+265, 370))
+        win.blit(text, (230, (i*20)+400))
+        letter = chr(ord(letter) + 1)
 
 
 def create_ships(win):
-    ships = [Ship(200, 60, 80), Ship(200, 160, 40), Ship(200, 220, 40), Ship(200, 280, 20), Ship(200, 320, 20)]
+    ships = [Ship(180, 60, 80), Ship(180, 160, 40), Ship(180, 220, 40), Ship(180, 280, 20), Ship(180, 320, 20)]
     [ship.draw(win) for ship in ships]
     return ships
 
 
 def main():
-    win = pygame.display.set_mode((800, 800))
+    running = True
 
+    n = Network()
+    startPos = n.get_pos()
+
+    win = pygame.display.set_mode((800, 800))
+    pygame.display.set_caption("Battleship Game")
     cells = np.zeros((14, 14))
     ships_on_board = []
     win.fill('black')
@@ -41,10 +55,14 @@ def main():
     ship_index = ''
     game_is_on = False
 
+    my_board = text_font.render("My Board:", True, 'red')
+    win.blit(my_board, (10, 30))
+    rival_board = text_font.render("Rival Board:", True, 'red')
+    win.blit(rival_board, (10, 400))
+
     pygame.display.flip()
     pygame.display.update()
 
-    running = True
     while running:
 
         for event in pygame.event.get():
@@ -65,24 +83,29 @@ def main():
                         pygame.display.flip()
             elif event.type == pygame.KEYDOWN and ship_deploying != '':
                 if event.key == pygame.K_RETURN:
-                    pygame.draw.rect(win, 'black', ship_deploying, width=1)
-                    win.fill('black', ship_deploying)
-                    pygame.display.flip()
-                    ship_deploying = ''
-                    ships_on_board.append(ships[ship_index])
+                    if len(ships_on_board) < 4:
+                        pygame.draw.rect(win, 'black', ship_deploying, width=1)
+                        win.fill('black', ship_deploying)
+                        pygame.display.flip()
+                        ship_deploying = ''
+                        ships_on_board.append(ships[ship_index])
+                    else:
+                        game_is_on = True
+                        n.send("ready")
                     continue
                 else:
-                    if event.key == pygame.K_UP:
+                    if event.key == pygame.K_UP and ships[ship_index].get_y() > 60:
                         ships[ship_index].up(win)
-                    if event.key == pygame.K_DOWN:
+                    if event.key == pygame.K_DOWN and ships[ship_index].get_y()+ships[ship_index].get_height() < 340:
                         ships[ship_index].down(win)
-                    if event.key == pygame.K_LEFT:
+                    if event.key == pygame.K_LEFT and ships[ship_index].get_x() > 260:
                         ships[ship_index].left(win)
-                    if event.key == pygame.K_RIGHT:
+                    if event.key == pygame.K_RIGHT and ships[ship_index].get_x() < 520:
                         ships[ship_index].right(win)
                     grid(win, cells, 20, (13, 3), ships_on_board)
                     ships[ship_index].draw(win)
                     pygame.display.flip()
 
 
-main()
+if __name__ == '__main__':
+    main()

@@ -22,6 +22,15 @@ class Ship:
         self.y = pos[1]
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
+    def get_x(self):
+        return self.x
+
+    def get_y(self):
+        return self.y
+
+    def get_height(self):
+        return self.height
+
     def left(self, win):
         self.erase(win)
         self.set_pos((self.x - 20, self.y))
